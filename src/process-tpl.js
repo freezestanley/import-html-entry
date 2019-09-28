@@ -4,32 +4,37 @@
  * @since 2018-09-03 15:04
  */
 import { getInlineCode } from './utils';
-
-const ALL_SCRIPT_REGEX = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
-const SCRIPT_TAG_REGEX = /<(script)\s+((?!type=('|')text\/ng-template\3).)*?>.*?<\/\1>/is;
-const SCRIPT_SRC_REGEX = /.*\ssrc=('|")(\S+)\1.*/;
-const SCRIPT_ENTRY_REGEX = /.*\sentry\s*.*/;
-const LINK_TAG_REGEX = /<(link)\s+.*?>/gi;
-const LINK_IGNORE_REGEX = /.*ignore\s*.*/;
-const STYLE_TAG_REGEX = /<style[^>]*>[\s\S]*?<\/style>/gi;
-const STYLE_TYPE_REGEX = /\s+rel=("|')stylesheet\1.*/;
-const STYLE_HREF_REGEX = /.*\shref=('|")(\S+)\1.*/;
-const STYLE_IGNORE_REGEX = /<style(\s+|\s+.+\s+)ignore(\s*|\s+.*)>/i;
-const HTML_COMMENT_REGEX = /<!--([\s\S]*?)-->/g;
-const SCRIPT_IGNORE_REGEX = /<script(\s+|\s+.+\s+)ignore(\s*|\s+.*)>/i;
+var ALL_SCRIPT_REGEX = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+var SCRIPT_TAG_REGEX = /<(script)\s+((?!type=('|')text\/ng-template\3).)*?>.*?<\/\1>/i;
+var SCRIPT_SRC_REGEX = /.*\ssrc=('|")(\S+)\1.*/;
+var SCRIPT_ENTRY_REGEX = /.*\sentry\s*.*/;
+var LINK_TAG_REGEX = /<(link)\s+.*?>/gi;
+var LINK_IGNORE_REGEX = /.*ignore\s*.*/;
+var STYLE_TAG_REGEX = /<style[^>]*>[\s\S]*?<\/style>/gi;
+var STYLE_TYPE_REGEX = /\s+rel=("?|'?)stylesheet\1.*/;
+var STYLE_HREF_REGEX = /.*\shref=('?|"?)(\S+)\1.*/;
+var STYLE_IGNORE_REGEX = /<style(\s+|\s+.+\s+)ignore(\s*|\s+.*)>/i;
+var HTML_COMMENT_REGEX = /<!--([\s\S]*?)-->/g;
+var SCRIPT_IGNORE_REGEX = /<script(\s+|\s+.+\s+)ignore(\s*|\s+.*)>/i;
 
 function hasProtocol(url) {
-	return url.startsWith('//') || url.startsWith('http://') || url.startsWith('https://');
+  return url.startsWith('//') || url.startsWith('http://') || url.startsWith('https://');
 }
 
 function getBaseDomain(url) {
-	return url.endsWith('/') ? url.substr(0, url.length - 1) : url;
+  return url.endsWith('/') ? url.substr(0, url.length - 1) : url;
 }
 
-export const genLinkReplaceSymbol = linkHref => `<!-- link ${linkHref} replaced by import-html-entry -->`;
-export const genScriptReplaceSymbol = scriptSrc => `<!-- script ${scriptSrc} replaced by import-html-entry -->`;
-export const inlineScriptReplaceSymbol = `<!-- inline scripts replaced by import-html-entry -->`;
-export const genIgnoreAssetReplaceSymbol = url => `<!-- ignore asset ${url || 'file'} replaced by import-html-entry -->`;
+export var genLinkReplaceSymbol = function genLinkReplaceSymbol(linkHref) {
+  return "<!-- link ".concat(linkHref, " replaced by import-html-entry -->");
+};
+export var genScriptReplaceSymbol = function genScriptReplaceSymbol(scriptSrc) {
+  return "<!-- script ".concat(scriptSrc, " replaced by import-html-entry -->");
+};
+export var inlineScriptReplaceSymbol = "<!-- inline scripts replaced by import-html-entry -->";
+export var genIgnoreAssetReplaceSymbol = function genIgnoreAssetReplaceSymbol(url) {
+  return "<!-- ignore asset ".concat(url || 'file', " replaced by import-html-entry -->");
+};
 /**
  * parse the script link from the template
  * 1. collect stylesheets
@@ -41,119 +46,116 @@ export const genIgnoreAssetReplaceSymbol = url => `<!-- ignore asset ${url || 'f
  * @stripStyles whether to strip the css links
  * @returns {{template: void | string | *, scripts: *[], entry: *}}
  */
+
 export default function processTpl(tpl, domain) {
+  var scripts = [];
+  var styles = [];
+  var entry = null;
+  var template = tpl
+  /*
+  remove html comment first
+  */
+  .replace(HTML_COMMENT_REGEX, '').replace(LINK_TAG_REGEX, function (match) {
+    /*
+    change the css link
+    */
+    var styleType = !!match.match(STYLE_TYPE_REGEX);
 
-	let scripts = [];
-	const styles = [];
-	let entry = null;
+    if (styleType) {
+      var styleHref = match.match(STYLE_HREF_REGEX);
+      var styleIgnore = match.match(LINK_IGNORE_REGEX);
 
-	const template = tpl
+      if (styleHref) {
+        var container = document.createElement('div')
+        container.innerHTML = styleHref.input
+        var href = styleHref && container.childNodes[0].href;
+        var newHref = href;
 
-		/*
-		remove html comment first
-		*/
-		.replace(HTML_COMMENT_REGEX, '')
+        if (href && !hasProtocol(href)) {
+          // 处理一下使用相对路径的场景
+          newHref = getBaseDomain(domain) + (href.startsWith('/') ? href : "/".concat(href));
+        }
 
-		.replace(LINK_TAG_REGEX, match => {
-			/*
-			change the css link
-			*/
-			const styleType = !!match.match(STYLE_TYPE_REGEX);
-			if (styleType) {
+        if (styleIgnore) {
+          return genIgnoreAssetReplaceSymbol(newHref);
+        }
 
-				const styleHref = match.match(STYLE_HREF_REGEX);
-				const styleIgnore = match.match(LINK_IGNORE_REGEX);
+        styles.push(newHref);
+        return genLinkReplaceSymbol(newHref);
+      }
+    }
 
-				if (styleHref) {
+    return match;
+  }).replace(STYLE_TAG_REGEX, function (match) {
+    if (STYLE_IGNORE_REGEX.test(match)) {
+      return genIgnoreAssetReplaceSymbol('style file');
+    }
 
-					const href = styleHref && styleHref[2];
-					let newHref = href;
+    return match;
+  }).replace(ALL_SCRIPT_REGEX, function (match) {
+    var scriptIgnore = match.match(SCRIPT_IGNORE_REGEX); // in order to keep the exec order of all javascripts
+    // if it is a external script
 
-					if (href && !hasProtocol(href)) {
-						// 处理一下使用相对路径的场景
-						newHref = getBaseDomain(domain) + (href.startsWith('/') ? href : `/${href}`);
-					}
-					if (styleIgnore) {
-						return genIgnoreAssetReplaceSymbol(newHref);
-					}
+    if (SCRIPT_TAG_REGEX.test(match)) {
+      /*
+      collect scripts and replace the ref
+      */
+      var matchedScriptEntry = match.match(SCRIPT_ENTRY_REGEX);
+      var matchedScriptSrcMatch = match.match(SCRIPT_SRC_REGEX);
+      var container = document.createElement('div')
+      container.innerHTML = match
+      var matchedScriptSrc = container.childNodes[0].src
+      // var matchedScriptSrc = matchedScriptSrcMatch && matchedScriptSrcMatch[2];
 
-					styles.push(newHref);
-					return genLinkReplaceSymbol(newHref);
-				}
-			}
+      if (entry && matchedScriptEntry) {
+        throw new SyntaxError('You should not set multiply entry script!');
+      } else {
+        // append the domain while the script not have an protocol prefix
+        if (matchedScriptSrc && !hasProtocol(matchedScriptSrc)) {
+          matchedScriptSrc = getBaseDomain(domain) + (matchedScriptSrc.startsWith('/') ? matchedScriptSrc : "/".concat(matchedScriptSrc));
+        }
 
-			return match;
-		})
-		.replace(STYLE_TAG_REGEX, match => {
-			if (STYLE_IGNORE_REGEX.test(match)) {
-				return genIgnoreAssetReplaceSymbol('style file');
-			}
-			return match;
-		})
-		.replace(ALL_SCRIPT_REGEX, match => {
-			const scriptIgnore = match.match(SCRIPT_IGNORE_REGEX);
-			// in order to keep the exec order of all javascripts
+        entry = entry || matchedScriptEntry && matchedScriptSrc;
+      }
 
-			// if it is a external script
-			if (SCRIPT_TAG_REGEX.test(match) && match.match(SCRIPT_SRC_REGEX)) {
-				/*
-				collect scripts and replace the ref
-				*/
+      if (scriptIgnore) {
+        return genIgnoreAssetReplaceSymbol(matchedScriptSrc || 'js file');
+      }
 
-				const matchedScriptEntry = match.match(SCRIPT_ENTRY_REGEX);
-				const matchedScriptSrcMatch = match.match(SCRIPT_SRC_REGEX);
-				let matchedScriptSrc = matchedScriptSrcMatch && matchedScriptSrcMatch[2];
+      if (matchedScriptSrc) {
+        scripts.push(matchedScriptSrc);
+        return genScriptReplaceSymbol(matchedScriptSrc);
+      }
 
-				if (entry && matchedScriptEntry) {
-					throw new SyntaxError('You should not set multiply entry script!');
-				} else {
+      return match;
+    } else {
+      if (scriptIgnore) {
+        return genIgnoreAssetReplaceSymbol('js file');
+      } // if it is an inline script
 
-					// append the domain while the script not have an protocol prefix
-					if (matchedScriptSrc && !hasProtocol(matchedScriptSrc)) {
-						matchedScriptSrc = getBaseDomain(domain) + (matchedScriptSrc.startsWith('/') ? matchedScriptSrc : `/${matchedScriptSrc}`);
-					}
 
-					entry = entry || matchedScriptEntry && matchedScriptSrc;
-				}
+      var code = getInlineCode(match); // remove script blocks when all of these lines are comments.
 
-				if (scriptIgnore) {
-					return genIgnoreAssetReplaceSymbol(matchedScriptSrc || 'js file');
-				}
+      var isPureCommentBlock = code.split(/[\r\n]+/).every(function (line) {
+        return !line.trim() || line.trim().startsWith('//');
+      });
 
-				if (matchedScriptSrc) {
-					scripts.push(matchedScriptSrc);
-					return genScriptReplaceSymbol(matchedScriptSrc);
-				}
+      if (!isPureCommentBlock) {
+        scripts.push(match);
+      }
 
-				return match;
-			} else {
-				if (scriptIgnore) {
-					return genIgnoreAssetReplaceSymbol('js file');
-				}
-				// if it is an inline script
-				const code = getInlineCode(match);
-
-				// remove script blocks when all of these lines are comments.
-				const isPureCommentBlock = code.split(/[\r\n]+/).every(line => !line.trim() || line.trim().startsWith('//'));
-
-				if (!isPureCommentBlock) {
-					scripts.push(match);
-				}
-
-				return inlineScriptReplaceSymbol;
-			}
-		});
-
-	scripts = scripts.filter(function (script) {
-		// filter empty script
-		return !!script;
-	});
-
-	return {
-		template,
-		scripts,
-		styles,
-		// set the last script as entry if have not set
-		entry: entry || scripts[scripts.length - 1],
-	};
+      return inlineScriptReplaceSymbol;
+    }
+  });
+  scripts = scripts.filter(function (script) {
+    // filter empty script
+    return !!script;
+  });
+  return {
+    template: template,
+    scripts: scripts,
+    styles: styles,
+    // set the last script as entry if have not set
+    entry: entry || scripts[scripts.length - 1]
+  };
 }
