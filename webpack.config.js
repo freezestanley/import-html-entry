@@ -1,9 +1,3 @@
-/**
- * @author Kuitos
- * @homepage https://github.com/kuitos/
- * @since 2018-09-03 11:51
- */
-
 const path = require('path');
 
 module.exports = env => {

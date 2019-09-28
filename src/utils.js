@@ -1,12 +1,4 @@
-/**
- * @author Kuitos
- * @homepage https://github.com/kuitos/
- * @since 2019-02-25
- * fork from https://github.com/systemjs/systemjs/blob/master/src/extras/global.js
- */
-
 let firstGlobalProp, secondGlobalProp, lastGlobalProp;
-
 export function getGlobalProp() {
 	let cnt = 0;
 	let lastProp;

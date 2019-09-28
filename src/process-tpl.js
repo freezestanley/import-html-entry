@@ -1,8 +1,3 @@
-/**
- * @author Kuitos
- * @homepage https://github.com/kuitos/
- * @since 2018-09-03 15:04
- */
 import { getInlineCode } from './utils';
 var ALL_SCRIPT_REGEX = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
 var SCRIPT_TAG_REGEX = /<(script)\s+((?!type=('|')text\/ng-template\3).)*?>.*?<\/\1>/i;

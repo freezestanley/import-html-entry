@@ -1,9 +1,3 @@
-/**
- * @author Kuitos
- * @homepage https://github.com/kuitos/
- * @since 2018-08-15 11:37
- */
-
 import processTpl, { genLinkReplaceSymbol } from './process-tpl';
 import { getGlobalProp, getInlineCode, noteGlobalProps } from './utils';
 
