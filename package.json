@@ -1,6 +1,6 @@
 {
-  "name": "import-html-entry",
-  "version": "1.2.5",
+  "name": "@fz/import-html-entry",
+  "version": "1.0.0",
   "description": "import html and get the exports of entry",
   "main": "./dist/import-html-entry.min.js",
   "module": "./esm/index.js",
