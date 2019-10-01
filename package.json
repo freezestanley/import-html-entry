@@ -1,6 +1,6 @@
 {
   "name": "html-entry",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "import html and get the exports of entry",
   "main": "./dist/import-html-entry.min.js",
   "module": "./esm/index.js",
@@ -73,5 +73,8 @@
       "/__tests__/",
       "/dist/"
     ]
+  },
+  "dependencies": {
+    "core-js": "^3.2.1"
   }
 }
