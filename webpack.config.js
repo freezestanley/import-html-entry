@@ -17,7 +17,7 @@ module.exports = env => {
 			library: 'importHTML',
 			libraryExport: 'default',
 		},
-		mode: 'production',
+		mode: 'development',
 		optimization: {
 			minimize,
 		},
