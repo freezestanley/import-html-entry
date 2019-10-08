@@ -72,9 +72,6 @@ function execScripts(entry, scripts, proxy = window) {
 	return getExternalScripts(scripts)
 		.then(scriptsText => {
 
-			window.proxy = proxy;
-			const geval = eval;
-
 			function exec(scriptSrc, inlineScript, resolve) {
 
 				const markName = `Evaluating script ${scriptSrc}`;
@@ -84,12 +81,13 @@ function execScripts(entry, scripts, proxy = window) {
 					performance.mark(markName);
 				}
 
+				const fn = new Function('window', inlineScript).bind(proxy);
 				if (scriptSrc === entry) {
 					noteGlobalProps();
 
 					try {
 						// bind window.proxy to change `this` reference in script
-						geval(`;(function(window){;${inlineScript}\n}).bind(window.proxy)(window.proxy);`);
+						fn(proxy)
 					} catch (e) {
 						console.error(`error occurs while executing the entry ${scriptSrc}`);
 						throw e;
@@ -101,7 +99,7 @@ function execScripts(entry, scripts, proxy = window) {
 				} else {
 					try {
 						// bind window.proxy to change `this` reference in script
-						geval(`;(function(window){;${inlineScript}\n}).bind(window.proxy)(window.proxy);`);
+						fn(proxy)
 					} catch (e) {
 						console.error(`error occurs while executing ${scriptSrc}`);
 						throw e;
