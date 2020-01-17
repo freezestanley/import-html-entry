@@ -1,6 +1,6 @@
 {
   "name": "html-entry",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "import html and get the exports of entry",
   "main": "./dist/import-html-entry.min.js",
   "module": "./esm/index.js",
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kuitos/import-html-entry.git"
+    "url": "git+https://github.com/freezestanley/import-html-entry.git"
   },
   "keywords": [
     "html",
